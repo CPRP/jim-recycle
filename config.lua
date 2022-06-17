@@ -10,7 +10,7 @@ Config = {
 	EnableOpeningHours = true, -- Enable opening hours? If disabled you can always open the pawnshop.
 	OpenHour = 9, -- From what hour should the pawnshop be open?
 	CloseHour = 21, -- From what hour should the pawnshop be closed?
-	img = "qb-inventory/html/images/", -- Set this to your inventory
+	img = "aj-inventory/html/images/", -- Set this to your inventory
 	RequireJob = false, -- Want this to be locked behind a job?
 	JobRole = "mechanic", -- Whats the job role you want to use this?
 }
