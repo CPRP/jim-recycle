@@ -1,4 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+RegisterNetEvent('QBCore:Client:UpdateObject', function() QBCore = exports['qb-core']:GetCoreObject() end)
 
 PlayerJob = {}
 onDuty = false
@@ -6,9 +7,11 @@ Peds = {}
 Targets = {}
 searchProps = {}
 Props = {}
+local TrollyProp = nil
+
 scrapPool = {
 	--{ model = ``, xPos = , yPos = , zPos = , xRot = , yRot = , zRot = },
-	{ model = `sf_prop_sf_art_box_cig_01a`, xPos = 0.16, yPos = -0.06, zPos = 0.21, xRot = 52.0, yRot = 288.0, zRot = 175.0},
+	--{ model = `sf_prop_sf_art_box_cig_01a`, xPos = 0.16, yPos = -0.06, zPos = 0.21, xRot = 52.0, yRot = 288.0, zRot = 175.0},
 	{ model = `hei_prop_drug_statue_box_01`, xPos = 0.08, yPos = 0.05, zPos = 0.06, xRot = 7.0, yRot = 198.0, zRot = 145.0},
 	{ model = `prop_mat_box`, xPos = 0.0, yPos = 0.28, zPos = 0.36, xRot = 136.0, yRot = 114.0, zRot = 181.0},
 	{ model = `prop_box_ammo03a`, xPos = -0.08, yPos = 0.04, zPos = 0.32, xRot = 76.0, yRot = 110.0, zRot = 185.0},
@@ -23,17 +26,22 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
 	QBCore.Functions.GetPlayerData(function(PlayerData) PlayerJob = PlayerData.job if PlayerData.job.name == Config.JobRole then onDuty = PlayerJob.onduty end end)
 end)
 
-RegisterNetEvent('QBCore:Client:SetDuty', function(duty) if Config.JobRole then if PlayerData.job.name == Config.JobRole then onDuty = duty end end end)
+RegisterNetEvent('QBCore:Client:SetDuty', function(duty) if Config.JobRole then if PlayerJob.name == Config.JobRole then onDuty = duty end end end)
 
 AddEventHandler('onResourceStart', function(resource) if GetCurrentResourceName() ~= resource then return end
 	QBCore.Functions.GetPlayerData(function(PlayerData) PlayerJob = PlayerData.job if PlayerData.job.name == Config.JobRole then onDuty = PlayerJob.onduty end end)
 end)
 --Don't even try to ask me how pairsByKeys works, found it on a tutorial site for organising tables
 function pairsByKeys(t) local a = {} for n in pairs(t) do a[#a+1] = n end table.sort(a)	local i = 0	local iter = function () i = i + 1 if a[i] == nil then return nil else return a[i], t[a[i]]	end	end	return iter end
-local time = 20
-function loadModel(model) if not HasModelLoaded(model) then if Config.Debug then print("^5Debug^7: ^2Loading Model^7: '^6"..model.."^7'") end while not HasModelLoaded(model) do if time > 0 then time = time - 1 RequestModel(model) else time = 30 break end Wait(10)	end	end end
+local time = 1000
+function loadModel(model) if not HasModelLoaded(model) then if Config.Debug then print("^5Debug^7: ^2Loading Model^7: '^6"..model.."^7'") end
+	while not HasModelLoaded(model) do if time > 0 then time = time - 1 RequestModel(model)
+		else time = 1000 print("^5Debug^7: ^3LoadModel^7: ^2Timed out loading model ^7'^6"..model.."^7'") break end
+		Wait(10) end
+	end
+end
 function unloadModel(model) if Config.Debug then print("^5Debug^7: ^2Removing Model^7: '^6"..model.."^7'") end SetModelAsNoLongerNeeded(model) end
-function loadAnimDict(dict)	if Config.Debug then print("^5Debug^7: ^2Loading Anim Dictionary^7: '^6"..dict.."^7'") end while not HasAnimDictLoaded(dict) do RequestAnimDict(dict) Wait(5) end end
+function loadAnimDict(dict) if Config.Debug then print("^5Debug^7: ^2Loading Anim Dictionary^7: '^6"..dict.."^7'") end while not HasAnimDictLoaded(dict) do RequestAnimDict(dict) Wait(5) end end
 function unloadAnimDict(dict) if Config.Debug then print("^5Debug^7: ^2Removing Anim Dictionary^7: '^6"..dict.."^7'") end RemoveAnimDict(dict) end
 function destroyProp(entity) if Config.Debug then print("^5Debug^7: ^2Destroying Prop^7: '^6"..entity.."^7'") end SetEntityAsMissionEntity(entity) Wait(5) DetachEntity(entity, true, true) Wait(5) DeleteObject(entity) end
 function conVector3(vector) return vector3(vector.x, vector.y, vector.z) end
@@ -47,11 +55,11 @@ CreateThread(function()
 		vector2(992.19049072266, -3089.8234863281)
 	},
 	{ name = "Recycling", debugPoly = Config.Debug })
-	JobLocation:onPlayerInOut(function(isPointInside) 
-		if not isPointInside then 
+	JobLocation:onPlayerInOut(function(isPointInside)
+		if not isPointInside then
 			EndJob() ClearProps()
 			if Config.Debug then print("^5Debug^7: ^3PolyZone^7: ^2Leaving Area^7. ^2Clocking out and cleaning up^7") end
-			if Config.JobRole then 
+			if Config.JobRole then
 				if onDuty then TriggerServerEvent("QBCore:ToggleDuty") end
 			elseif onDuty == true then
 				onDuty = false
@@ -93,7 +101,7 @@ CreateThread(function()
 	local price = "" if Config.PayAtDoor then price = " ($"..Config.PayAtDoor..")" end
 	Targets["RecyclingEnter"] =
 		exports['qb-target']:AddBoxZone("RecyclingEnter", vector3(746.82, -1398.93, 26.55), 0.4, 1.6, { name="RecyclingEnter", debugPoly=Config.Debug, minZ=25.2, maxZ=28.0 },
-			{ options = { { event = "jim-recycle:TeleWareHouse", icon = "fas fa-recycle", label = "Enter Warehouse"..price, enter = true, job = Config.Job }, },
+			{ options = { { event = "jim-recycle:TeleWareHouse", icon = "fas fa-recycle", label = "Enter Warehouse"..price, enter = true, job = Config.JobRole }, },
 			distance = 1.5 })
 
 	Targets["RecyclingExit"] =
@@ -103,7 +111,7 @@ CreateThread(function()
 
 	Targets["RecycleDuty"] =
 		exports['qb-target']:AddCircleZone("RecycleDuty", vector3(995.36, -3099.91, -39.2), 0.45, { name="RecycleDuty", debugPoly=Config.Debug, useZ=true, },
-			{ options = { { event = "jim-recycle:dutytoggle", icon = "fas fa-hard-hat", label = "Toggle Recycling Duty", job = Config.Job }, },
+			{ options = { { event = "jim-recycle:dutytoggle", icon = "fas fa-hard-hat", label = "Toggle Recycling Duty", job = Config.JobRole }, },
 			distance = 1.5 })
 	--Recyclable Material Trader
 	for i = 1, #Config.Locations["Trade"] do
@@ -123,7 +131,7 @@ CreateThread(function()
 	for i = 1, #Config.Locations["BottleBanks"] do
 		Targets["BottleBank"..i] =
 			exports['qb-target']:AddCircleZone("BottleBank"..i, conVector3(Config.Locations["BottleBanks"][i].coords), 1.2,	{ name="BottleBank"..i, debugPoly=Config.Debug, useZ=true, },
-				{ options = { { event = "jim-recycle:Bottle:Menu", icon = "fas fa-certificate", label = "Sell Bottles", job = Config.Job  }, },
+				{ options = { { event = "jim-recycle:Bottle:Menu", icon = "fas fa-certificate", label = "Sell Bottles", job = Config.JobRole  }, },
 				distance = 1.5 })
 	end
 end)
@@ -250,12 +258,11 @@ function MakeProps()
 	Props[#Props+1] = CreateObject(`ex_Prop_Crate_Elec_SC`,				993.355, -3108.95, -35.62, 0, 0, 0) SetEntityHeading(Props[#Props], 90.0)
 
 	--Props[#Props+1] = CreateObject(`prop_toolchest_05`,					1002.04, -3108.36, -39.99, 0, 0, 0) SetEntityHeading(Props[#Props], -90.0)
-	loadModel(`ex_Prop_Crate_Closed_BC`)
-	TrollyProp = CreateObject(`ex_Prop_Crate_Closed_BC`, 999.32, -3093.2, -39.78, 0, 0, 0) FreezeEntityPosition(TrollyProp, true) SetEntityHeading(TrollyProp, 166.38)
+	for k in pairs(scrapPool) do loadModel(scrapPool[k].model) end
 end
 function EndJob()
-	if Targets["Package"] then exports["qb-target"]:RemoveTargetEntity(randPackage, "Search") end
-	if Targets["DropOff"] then exports["qb-target"]:RemoveTargetEntity(TrollyProp, "Drop Off") end
+	if Targets["Package"] then exports["qb-target"]:RemoveTargetEntity(randPackage) end
+	destroyProp(TrollyProp) TrollyProp = nil
 	for i = 1, #searchProps do SetEntityDrawOutline(searchProps[i], false) end
 	randPackage = nil
 	if scrapProp then
@@ -268,12 +275,17 @@ function ClearProps()
 	if Config.Debug then print("^5Debug^7: ^3ClearProps^7() ^2Exiting building^7, ^2clearing previous props ^7(^2if any^7)") end
 	for _, v in pairs(searchProps) do unloadModel(GetEntityModel(v)) DeleteObject(v) end searchProps = {}
 	for _, v in pairs(Props) do unloadModel(GetEntityModel(v)) DeleteObject(v) end Props = {}
-	if Targets["DropOff"] then exports["qb-target"]:RemoveTargetEntity(TrollyProp, "Drop Off") end
+	for k in pairs(scrapPool) do unloadModel(scrapPool[k].model) end
+	if Targets["DropOff"] then exports["qb-target"]:RemoveTargetEntity(TrollyProp) end
 	unloadModel(GetEntityModel(TrollyProp)) DeleteObject(TrollyProp)
 end
 
 --Pick one of the crates for the player to choose, generate outline + target
 function PickRandomPackage()
+	if not TrollyProp then
+		loadModel(`ex_Prop_Crate_Closed_BC`)
+		TrollyProp = CreateObject(`ex_Prop_Crate_Closed_BC`, 999.32, -3093.2, -39.78, 0, 0, 0) FreezeEntityPosition(TrollyProp, true) SetEntityHeading(TrollyProp, 166.38)
+	end
 	--If somehow already exists, remove target
 	if Targets["Package"] then exports["qb-target"]:RemoveTargetEntity(randPackage, "Search") end
 	--Pick random prop to use
@@ -357,10 +369,14 @@ RegisterNetEvent("jim-recycle:PickupPackage:Hold", function()
 			distance = 2.5,	})
 
 end)
+
 RegisterNetEvent("jim-recycle:PickupPackage:Finish", function()
-	--One this is triggered it can't be stopped, so remove the target
-	exports["qb-target"]:RemoveTargetEntity(TrollyProp, "Drop Off")
-	SetEntityDrawOutline(TrollyProp, false)
+	--Once this is triggered it can't be stopped, so remove the target and prop
+	if Targets["DropOff"] then exports["qb-target"]:RemoveTargetEntity(TrollyProp, "Drop Off") Targets["DropOff"] = nil end
+	SetEntityDrawOutline(TrollyProp, false) destroyProp(TrollyProp) TrollyProp = nil
+	--Remove and the whole prop, seen as how no ones qb-target works and its my fault 😊
+	TrollyProp = CreateObject(`ex_Prop_Crate_Closed_BC`, 999.32, -3093.2, -39.78, 0, 0, 0) FreezeEntityPosition(TrollyProp, true) SetEntityHeading(TrollyProp, 166.38)
+
 	--Load and Start animation
 	local dict = "mp_car_bomb" loadAnimDict("mp_car_bomb")
 	local anim = "car_bomb_mechanic"
@@ -432,6 +448,7 @@ RegisterNetEvent('jim-recycle:Selling:Menu', function()
 		{ icon = "fas fa-circle-xmark", header = "", txt = "Close", params = { event = "jim-recycle:CloseMenu" } } }
 	for k, v in pairsByKeys(Config.Prices) do
 		local p = promise.new() QBCore.Functions.TriggerCallback("QBCore:HasItem", function(cb) p:resolve(cb) end, k)
+		print(k)
 		sellMenu[#sellMenu+1] = {
 			hidden = not Citizen.Await(p),
 			icon = k,
@@ -440,7 +457,6 @@ RegisterNetEvent('jim-recycle:Selling:Menu', function()
 			params = { event = "jim-recycle:SellAnim", args = k } }
 		Wait(10)
 	end
-	print(#sellMenu)
     exports['qb-menu']:openMenu(sellMenu)
 end)
 
@@ -466,12 +482,10 @@ RegisterNetEvent('jim-recycle:Bottle:Menu', function()
 		{ icon = "recyclablematerial", header = "Material Selling", txt = "Sell batches of recyclables", isMenuHeader = true },
 		{ icon = "fas fa-circle-xmark", header = "", txt = "Close", params = { event = "jim-recycle:CloseMenu" } } }
 
-	local p = promise.new() QBCore.Functions.TriggerCallback("QBCore:HasItem", function(cb) p:resolve(cb) end, "can") 
-	if Citizen.Await(p) then tradeMenu[#tradeMenu+1] = { icon = "can", header = "<img src=nui://"..Config.img..QBCore.Shared.Items["can"].image.." width=30px onerror='this.onerror=null; this.remove();'> "..QBCore.Shared.Items["can"].label, params = { event = "jim-recycle:SellAnim", args = 'can' } } end
+	if QBCore.Functions.HasItem("can", 1) then tradeMenu[#tradeMenu+1] = { icon = "can", header = "<img src=nui://"..Config.img..QBCore.Shared.Items["can"].image.." width=30px onerror='this.onerror=null; this.remove();'> "..QBCore.Shared.Items["can"].label, params = { event = "jim-recycle:SellAnim", args = 'can' } } end
 	Wait(10)
-	local p2 = promise.new() QBCore.Functions.TriggerCallback("QBCore:HasItem", function(cb) p2:resolve(cb) end, "bottle") 
-	if Citizen.Await(p2) then tradeMenu[#tradeMenu+1] = { icon = "bottle", header = "<img src=nui://"..Config.img..QBCore.Shared.Items["bottle"].image.." width=30px onerror='this.onerror=null; this.remove();'> "..QBCore.Shared.Items["bottle"].label, params = { event = "jim-recycle:SellAnim", args = 'bottle' } } end
-    
+	if QBCore.Functions.HasItem("bottle", 1) then tradeMenu[#tradeMenu+1] = { icon = "bottle", header = "<img src=nui://"..Config.img..QBCore.Shared.Items["bottle"].image.." width=30px onerror='this.onerror=null; this.remove();'> "..QBCore.Shared.Items["bottle"].label, params = { event = "jim-recycle:SellAnim", args = 'bottle' } } end
+
 	if #tradeMenu > 2 then exports['qb-menu']:openMenu(tradeMenu)
 	else TriggerEvent("QBCore:Notify", "No bottles or cans to trade", "error") end
 end)
