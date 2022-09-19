@@ -63,6 +63,11 @@ Config = {
 		"bottle",
 		"can",
 		"sandwich",
+		"water_bottle",
+		"pistol_ammo",
+		"lockpick",
+		"rolex",
+		"cryptostick",
 	},
 	ScrapItems = {
 		"steel",
