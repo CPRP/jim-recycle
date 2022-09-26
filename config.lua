@@ -64,7 +64,6 @@ Config = {
 		"can",
 		"sandwich",
 		"water_bottle",
-		"lockpick",
 		"rolex",
 	},
 	ScrapItems = {
