@@ -62,8 +62,8 @@ Config = {
 	DumpItems = {
 		"bottle",
 		"can",
-		"sandwich",
-		"water_bottle",
+		"plastic",
+		"metalscrap",
 		"rolex",
 	},
 	ScrapItems = {
